@@ -73,6 +73,15 @@ impl App {
 		self.image = Some(image);
 
 		self.texture = Some(texture);
+
+		// Default the component name to the image file name (without extension),
+		// but only while the field is still blank, so an edited name survives loading.
+		if self.patient_name.is_empty()
+			&& let Some(stem) =
+				self.current_file.as_ref().and_then(|p| p.file_stem()).and_then(|s| s.to_str())
+		{
+			self.patient_name = stem.to_owned();
+		}
 	}
 
 	// Shows the toolbar (menu bar + icon buttons) and handles global keyboard shortcuts.
