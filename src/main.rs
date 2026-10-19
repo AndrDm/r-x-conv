@@ -6,6 +6,84 @@ use std::path::PathBuf;
 #[cfg(target_arch = "wasm32")]
 use std::sync::{Arc, Mutex};
 
+const OPEN_SHORTCUT: egui::KeyboardShortcut =
+	egui::KeyboardShortcut::new(egui::Modifiers::COMMAND, egui::Key::O);
+
+const SAVE_SHORTCUT: egui::KeyboardShortcut =
+	egui::KeyboardShortcut::new(egui::Modifiers::COMMAND, egui::Key::S);
+
+#[cfg(not(target_arch = "wasm32"))]
+const QUIT_SHORTCUT: egui::KeyboardShortcut =
+	egui::KeyboardShortcut::new(egui::Modifiers::COMMAND, egui::Key::Q);
+
+#[derive(Clone, Copy)]
+enum MenuCommand {
+	Open,
+	Save,
+	#[cfg(not(target_arch = "wasm32"))]
+	Quit,
+}
+
+fn menu_item(ui: &mut egui::Ui, label: &str, shortcut: egui::KeyboardShortcut) -> egui::Response {
+	ui.add(egui::Button::new(label).shortcut_text(ui.ctx().format_shortcut(&shortcut)))
+}
+
+impl App {
+	// Shows the menu bar and handles global keyboard shortcuts.
+	// Returns None if no menu command was triggered this frame.
+	fn show_menu(&mut self, ui: &mut egui::Ui) -> Option<MenuCommand> {
+		let mut command = None;
+
+		if ui.input_mut(|i| i.consume_shortcut(&OPEN_SHORTCUT)) {
+			command = Some(MenuCommand::Open);
+		}
+
+		if ui.input_mut(|i| i.consume_shortcut(&SAVE_SHORTCUT)) {
+			command = Some(MenuCommand::Save);
+		}
+
+		#[cfg(not(target_arch = "wasm32"))]
+		if ui.input_mut(|i| i.consume_shortcut(&QUIT_SHORTCUT)) {
+			command = Some(MenuCommand::Quit);
+		}
+
+		let mut open_about = false;
+
+		egui::MenuBar::new().ui(ui, |ui| {
+			ui.menu_button("File", |ui| {
+				if menu_item(ui, "Open TIFF Image...", OPEN_SHORTCUT).clicked() {
+					command = Some(MenuCommand::Open);
+				}
+
+				ui.separator();
+
+				if menu_item(ui, "Save DICONDE Image As...", SAVE_SHORTCUT).clicked() {
+					command = Some(MenuCommand::Save);
+				}
+
+				ui.separator();
+
+				#[cfg(not(target_arch = "wasm32"))]
+				if menu_item(ui, "Quit", QUIT_SHORTCUT).clicked() {
+					command = Some(MenuCommand::Quit);
+				}
+			});
+
+			ui.menu_button("Help", |ui| {
+				if ui.button("About...").clicked() {
+					open_about = true;
+				}
+			});
+		});
+
+		if open_about {
+			self.show_about = true;
+		}
+
+		command
+	}
+}
+
 struct App {
 	current_file: Option<PathBuf>,
 	image: Option<DynamicImage>,
@@ -13,6 +91,8 @@ struct App {
 
 	patient_name: String,
 	pixel_spacing: f64,
+
+	show_about: bool,
 
 	#[cfg(target_arch = "wasm32")]
 	pending_image: Arc<Mutex<Option<(String, Vec<u8>)>>>,
@@ -26,6 +106,7 @@ impl Default for App {
 			texture: None,
 			patient_name: String::new(),
 			pixel_spacing: 0.1,
+			show_about: false,
 
 			#[cfg(target_arch = "wasm32")]
 			pending_image: Arc::new(Mutex::new(None)),
@@ -252,10 +333,14 @@ impl eframe::App for App {
 			}
 		}
 
+		let mut menu_command: Option<MenuCommand> = None;
+
 		egui::Frame::default().fill(egui::Color32::WHITE).show(ui, |ui| {
 			ui.style_mut().visuals = egui::Visuals::light();
 
 			ui.heading("TIFF to DICONDE Converter");
+
+			menu_command = self.show_menu(ui);
 
 			if ui.button("Open TIFF File").clicked() {
 				#[cfg(not(target_arch = "wasm32"))]
@@ -322,6 +407,58 @@ impl eframe::App for App {
 				ui.add(egui::Image::new(texture).fit_to_exact_size(size * scale));
 			}
 		});
+
+		if let Some(command) = menu_command {
+			match command {
+				MenuCommand::Open => {
+					#[cfg(not(target_arch = "wasm32"))]
+					if let Some((path, img, tex)) = open_tiff(ui.ctx()) {
+						self.current_file = Some(path);
+
+						self.image = Some(img);
+
+						self.texture = Some(tex);
+					}
+
+					#[cfg(target_arch = "wasm32")]
+					start_open_tiff(self.pending_image.clone());
+				}
+
+				MenuCommand::Save => {
+					if let Some(img) = &self.image {
+						save_dicom(img, &self.patient_name, self.pixel_spacing);
+					}
+				}
+
+				#[cfg(not(target_arch = "wasm32"))]
+				MenuCommand::Quit => {
+					ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+				}
+			}
+		}
+
+		if self.show_about {
+			let response = egui::Modal::new(egui::Id::new("about")).show(ui.ctx(), |ui| {
+				ui.set_width(280.0);
+
+				ui.vertical_centered(|ui| {
+					ui.heading(env!("CARGO_PKG_NAME"));
+
+					ui.weak(concat!("v", env!("CARGO_PKG_VERSION")));
+				});
+
+				ui.add_space(8.0);
+
+				ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+					ui.button("OK").clicked()
+				})
+				.inner
+			});
+
+			if response.inner || response.should_close() {
+				self.show_about = false;
+			}
+		}
 	}
 }
 

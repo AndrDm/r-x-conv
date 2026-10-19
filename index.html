@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>egui web</title>
+    <title>TIFF to DICONDE Converter</title>
     <style>
         html, body {
             margin: 0;
@@ -16,9 +16,23 @@
             width: 100%;
             height: 100%;
         }
+        
+        #privacy_notice {
+            position: fixed;
+            right: 8px;
+            bottom: 4px;
+            padding: 4px 8px;
+            font: 12px system-ui, sans-serif;
+            color: #555;
+            background: rgba(255, 255, 255, 0.85);
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
     <canvas id="the_canvas_id"></canvas>
+    <div id="privacy_notice">
+        This is a client-side app: files are processed in your browser and are never uploaded to any server.
+    </div>
 </body>
 </html>

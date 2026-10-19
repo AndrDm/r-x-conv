@@ -5,7 +5,8 @@ Small single-crate egui/eframe app that converts TIFF images to DICONDE (DICOM f
 ## Build & run
 
 - Desktop (Windows MSVC): `cargo run`.
-- Web: `cargo build --target wasm32-unknown-unknown` (target is installed via rustup). `index.html` at the repo root is the host page; serving/codegen tooling (e.g. Trunk) is **not** committed. Verify wasm compiles after changes: `cargo build --target wasm32-unknown-unknown`.
+- Web: `cargo build --target wasm32-unknown-unknown` (target is installed via rustup).
+- Deploy: `index.html` at the repo root is the host page; serving/codegen tooling is trunk. Verify trunk compiles after changes: `trunk build --release`.
 - No `cargo clippy` config; effective verification is `cargo build` (both targets) + `cargo fmt`.
 
 ## Formatting
