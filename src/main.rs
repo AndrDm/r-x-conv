@@ -495,12 +495,21 @@ impl eframe::App for App {
 			ui.add_space(8.0);
 
 			ui.horizontal(|ui| {
-				ui.label("Pixel Spacing (0028,0030)");
+				let tooltip = "Physical distance in the component between the center of each \
+                   pixel, specified internally by a numeric pair: adjacent row \
+                   spacing and adjacent column spacing, in mm.";
+
+				ui.label("Pixel Spacing, mm/pix (0028,0030)")
+					.on_hover_text(tooltip);
 
 				ui.add_sized(
 					[100.0, 24.0],
-					egui::DragValue::new(&mut self.pixel_spacing).speed(0.01).fixed_decimals(6),
-				);
+					egui::DragValue::new(&mut self.pixel_spacing)
+						.speed(0.01)
+						.fixed_decimals(6)
+						.range(0.0..=f64::INFINITY),
+				)
+					.on_hover_text(tooltip);
 			});
 
 			ui.add_space(8.0);

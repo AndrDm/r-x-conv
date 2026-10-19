@@ -4039,7 +4039,7 @@ dependencies = [
 
 [[package]]
 name = "tiff_to_dicom"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "dicom-core",
  "dicom-dictionary-std",
