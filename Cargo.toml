@@ -9,6 +9,7 @@ dicom-dictionary-std = "0.10.0"
 dicom-object = "0.10.0"
 eframe = "0.36.2"
 egui = "0.36.2"
+egui_extras = { version = "0.36.2", features = ["svg"] }
 image = { version = "0.25.10", features = ["tiff"] }
 rfd = "0.17.2"
 wasm-bindgen-futures = "0.4.76"
